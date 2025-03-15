@@ -1,6 +1,9 @@
 package com.cst438.controller;
 
 
+import com.cst438.domain.Enrollment;
+import com.cst438.domain.EnrollmentRepository;
+import com.cst438.domain.SectionRepository;
 import com.cst438.dto.EnrollmentDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -14,6 +17,11 @@ import java.util.List;
 @CrossOrigin(origins = "http://localhost:3000")
 public class EnrollmentController {
 
+    @Autowired
+    private EnrollmentRepository enrollmentRepository;
+
+    @Autowired
+    private SectionRepository sectionRepository;
 
     /**
      instructor gets list of enrollments for a section
@@ -46,6 +54,7 @@ public class EnrollmentController {
         // For each EnrollmentDTO in the list
         //  find the Enrollment entity using enrollmentId
         //  update the grade and save back to database
+
 
     }
 
