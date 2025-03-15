@@ -109,7 +109,7 @@ public class StudentController {
             assignmentStudentDTOs.add(dto);
         }
 
-        return null;
+        return assignmentStudentDTOs;
     }
 
 }
