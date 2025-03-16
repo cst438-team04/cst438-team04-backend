@@ -23,6 +23,8 @@ public class EnrollmentController {
     @Autowired
     private SectionRepository sectionRepository;
 
+
+
     /**
      instructor gets list of enrollments for a section
      list of enrollments returned is in order by student name
@@ -35,8 +37,34 @@ public class EnrollmentController {
         // TODO
 		//  hint: use enrollment repository findEnrollmentsBySectionNoOrderByStudentName method
         //  remove the following line when done
+        List<Enrollment> enrollments = enrollmentRepository.findEnrollmentsBySectionNoOrderByStudentName(sectionNo);
 
-        return null;
+        if(enrollments.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+
+        List<EnrollmentDTO> enrollmentDTOs = new ArrayList<>();
+        for(Enrollment enrollment : enrollments) {
+            EnrollmentDTO dto = new EnrollmentDTO(
+                    enrollment.getEnrollmentId(),
+                    enrollment.getGrade(),
+                    enrollment.getUser().getId(),
+                    enrollment.getUser().getName(),
+                    enrollment.getUser().getEmail(),
+                    enrollment.getSection().getCourse().getCourseId(),
+                    enrollment.getSection().getCourse().getTitle(),
+                    enrollment.getSection().getSecId(),
+                    enrollment.getSection().getSectionNo(),
+                    enrollment.getSection().getBuilding(),
+                    enrollment.getSection().getRoom(),
+                    enrollment.getSection().getTimes(),
+                    enrollment.getSection().getCourse().getCredits(),
+                    enrollment.getSection().getTerm().getYear(),
+                    enrollment.getSection().getTerm().getSemester()
+            );
+            enrollmentDTOs.add(dto);
+        }
+        return enrollmentDTOs;
     }
 
     // instructor uploads enrollments with the final grades for the section
@@ -54,7 +82,14 @@ public class EnrollmentController {
         // For each EnrollmentDTO in the list
         //  find the Enrollment entity using enrollmentId
         //  update the grade and save back to database
+        for(EnrollmentDTO enrollmentDTO : dlist) {
+            Enrollment enrollment = enrollmentRepository.findById(enrollmentDTO.enrollmentId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
+            enrollment.setGrade(enrollmentDTO.grade());
+
+            enrollmentRepository.save(enrollment);
+        }
 
     }
 
