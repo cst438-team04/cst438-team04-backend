@@ -40,7 +40,7 @@ public class EnrollmentController {
         List<Enrollment> enrollments = enrollmentRepository.findEnrollmentsBySectionNoOrderByStudentName(sectionNo);
 
         if(enrollments.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No enrollments found for section " + sectionNo);
         }
 
         List<EnrollmentDTO> enrollmentDTOs = new ArrayList<>();
@@ -82,9 +82,13 @@ public class EnrollmentController {
         // For each EnrollmentDTO in the list
         //  find the Enrollment entity using enrollmentId
         //  update the grade and save back to database
+        if (dlist == null || dlist.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request body cannot be empty.");
+        }
+
         for(EnrollmentDTO enrollmentDTO : dlist) {
             Enrollment enrollment = enrollmentRepository.findById(enrollmentDTO.enrollmentId())
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Enrollment ID " + enrollmentDTO.enrollmentId() + " not found."));
 
             enrollment.setGrade(enrollmentDTO.grade());
 
