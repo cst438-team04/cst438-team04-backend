@@ -20,22 +20,41 @@ import java.util.List;
 @RestController
 @CrossOrigin(origins = "http://localhost:3000")
 public class AssignmentController {
+    
+    @Autowired
+    private AssignmentRepository assignmentRepository;
 
+    @Autowired	
+    private SectionRepository sectionRepository;
+		
     /**
      instructor lists assignments for a section.
      Assignment data is returned ordered by due date.
      logged in user must be the instructor for the section (assignment 7)
      */
     @GetMapping("/sections/{secNo}/assignments")
-    public List<AssignmentDTO> getAssignments(
-            @PathVariable("secNo") int secNo) {
-		
+    public List<AssignmentDTO> getAssignments(@PathVariable("secNo") int secNo) {
+	List<Assignment> assignments = assignmentRepository.findBySectionNoOrderByDueDate(secNo);
+
+	if (assignments.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No assignments found for section " + secNo);
+        }
+
+	List<AssignmentDTO> assignmentDTOs = new ArrayList<>();
+        for (Assignment a : assignments) {
+            assignmentDTOs.add(new AssignmentDTO(
+                a.getAssignmentId(), 
+                a.getTitle(), 
+                a.getDueDate().toString(), 
+                a.getSection().getCourse().getCourseId(), 
+                a.getSection().getSecId(), 
+                a.getSection().getSecNo()
+            ));
+        }
+        return assignmentDTOs;    
 		// hint: use the assignment repository method 
 		//  findBySectionNoOrderByDueDate to return 
 		//  a list of assignments
-
-        // TODO remove the following line when done
-        return null;
     }
 
     /**
@@ -44,12 +63,30 @@ public class AssignmentController {
      logged in user must be the instructor for the section (assignment 7)
      */
     @PostMapping("/assignments")
-    public AssignmentDTO createAssignment(
-            @RequestBody AssignmentDTO dto) {
+    public AssignmentDTO createAssignment(@RequestBody AssignmentDTO dto) {
+        Section section = sectionRepository.findById(dto.secId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Section not found."));
 
-        // TODO remove the following line when done
+	Assignment assignment = new Assignment();
+        assignment.setTitle(dto.title());    
 
-        return null;
+	try {
+            assignment.setDueDate(java.sql.Date.valueOf(dto.dueDate())); // Ensure date conversion
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid date format. Use YYYY-MM-DD.");
+        }    
+
+	assignment.setSection(section);
+        assignment = assignmentRepository.save(assignment);
+
+        return new AssignmentDTO(
+            assignment.getAssignmentId(),
+            assignment.getTitle(),
+            assignment.getDueDate().toString(),
+            section.getCourse().getCourseId(),
+            section.getSecId(),
+            section.getSecNo()
+        ); 
     }
 
     /**
@@ -60,10 +97,27 @@ public class AssignmentController {
      */
     @PutMapping("/assignments")
     public AssignmentDTO updateAssignment(@RequestBody AssignmentDTO dto) {
+	Assignment assignment = assignmentRepository.findById(dto.id())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Assignment not found."));
 
-        // TODO remove the following line when done
+	assignment.setTitle(dto.title());
 
-        return null;
+        try {
+            assignment.setDueDate(java.sql.Date.valueOf(dto.dueDate()));
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid date format. Use YYYY-MM-DD.");
+        }
+
+	assignment = assignmentRepository.save(assignment);    
+	    
+        return new AssignmentDTO(
+            assignment.getAssignmentId(),
+            assignment.getTitle(),
+            assignment.getDueDate().toString(),
+            assignment.getSection().getCourse().getCourseId(),
+            assignment.getSection().getSecId(),
+            assignment.getSection().getSecNo()
+        );
     }
 
     /**
@@ -72,7 +126,9 @@ public class AssignmentController {
      */
     @DeleteMapping("/assignments/{assignmentId}")
     public void deleteAssignment(@PathVariable("assignmentId") int assignmentId) {
-
-        // TODO
+	if (!assignmentRepository.existsById(assignmentId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Assignment not found.");
+        }
+        assignmentRepository.deleteById(assignmentId);
     }
 }
