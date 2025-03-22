@@ -48,7 +48,7 @@ public class AssignmentController {
                 a.getDueDate().toString(), 
                 a.getSection().getCourse().getCourseId(), 
                 a.getSection().getSecId(), 
-                a.getSection().getSecNo()
+                a.getSection().getSectionNo()
             ));
         }
         return assignmentDTOs;    
@@ -64,7 +64,7 @@ public class AssignmentController {
      */
     @PostMapping("/assignments")
     public AssignmentDTO createAssignment(@RequestBody AssignmentDTO dto) {
-        Section section = sectionRepository.findById(dto.secId())
+        Section section = sectionRepository.findById(dto.secNo())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Section not found."));
 
 	Assignment assignment = new Assignment();
@@ -85,7 +85,7 @@ public class AssignmentController {
             assignment.getDueDate().toString(),
             section.getCourse().getCourseId(),
             section.getSecId(),
-            section.getSecNo()
+            section.getSectionNo()
         ); 
     }
 
@@ -116,7 +116,7 @@ public class AssignmentController {
             assignment.getDueDate().toString(),
             assignment.getSection().getCourse().getCourseId(),
             assignment.getSection().getSecId(),
-            assignment.getSection().getSecNo()
+            assignment.getSection().getSectionNo()
         );
     }
 
