@@ -8,9 +8,15 @@ import com.cst438.domain.SectionRepository;
 import com.cst438.domain.UserRepository;
 import com.cst438.dto.EnrollmentDTO;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
+import java.sql.Date;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -73,13 +79,14 @@ public class StudentScheduleController {
     @PostMapping("/enrollments/sections/{sectionNo}")
     public ResponseEntity<?> addCourse(
             @PathVariable int sectionNo,
-            @RequestParam("studentId") String studentId) {
+            @RequestParam("studentId") String studentId,
+            @RequestParam(value = "date", required = false) String date) {
 
         try {
             int id = Integer.parseInt(studentId);
 
             Section section = sectionRepository.findById(sectionNo)
-                    .orElseThrow(() -> new RuntimeException("Section not found"));
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Section Not Found"));
 
             User student = userRepository.findById(id)
                     .orElseThrow(() -> new RuntimeException("Student not found"));
@@ -88,6 +95,14 @@ public class StudentScheduleController {
             Enrollment existingEnrollment = enrollmentRepository.findEnrollmentBySectionNoAndStudentId(sectionNo, id);
             if (existingEnrollment != null) {
                 return ResponseEntity.badRequest().body("Student is already enrolled in this section");
+            }
+
+            LocalDate currentDate = (date != null) ?  LocalDate.parse(date) : LocalDate.now();
+            Date addDeadline = section.getTerm().getAddDeadline();
+            LocalDate deadlineDate = addDeadline.toLocalDate();
+            if(currentDate.isAfter(deadlineDate))
+            {
+                return ResponseEntity.badRequest().body("Cannot enroll. The add deadline has passed for this section");
             }
 
             Enrollment enrollment = new Enrollment();
@@ -118,6 +133,8 @@ public class StudentScheduleController {
             return ResponseEntity.ok(enrollmentDTO);
         } catch (NumberFormatException e) {
             return ResponseEntity.badRequest().body("Invalid studentId: " + studentId);
+        } catch (ResponseStatusException ex) {
+            return new ResponseEntity<>(ex.getReason(),ex.getStatusCode());
         }
     }
 
