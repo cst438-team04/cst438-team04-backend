@@ -44,8 +44,8 @@ public class AssignmentControllerSystemTest {
         driver.findElement(By.xpath("//button[contains(text(),'Add Assignment')]")).click();
         Thread.sleep(SLEEP_DURATION);
 
-        driver.findElement(By.xpath("//input[@label='Title' or @id='title']")).sendKeys("Selenium Test Assignment");
-        driver.findElement(By.xpath("//input[@type='date']")).sendKeys("2025-05-15");
+        driver.findElement(By.id("atitle")).sendKeys("Selenium Test Assignment");
+        driver.findElement(By.id("adueDate")).sendKeys("2025-05-15");
 
         driver.findElement(By.xpath("//button[contains(text(),'Save')]")).click();
         Thread.sleep(SLEEP_DURATION);
@@ -85,7 +85,7 @@ public class AssignmentControllerSystemTest {
         gradeIcon.click();
         Thread.sleep(SLEEP_DURATION);
 
-        WebElement scoreInput = driver.findElement(By.xpath("//input[@name='score']"));
+        WebElement scoreInput = driver.findElement(By.name("score"));
         scoreInput.clear();
         scoreInput.sendKeys("95");
 
