@@ -5,6 +5,8 @@ import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 public class AssignmentControllerSystemTest {
@@ -38,24 +40,28 @@ public class AssignmentControllerSystemTest {
         driver.findElement(By.linkText("View Sections")).click();
         Thread.sleep(SLEEP_DURATION);
 
-        driver.findElement(By.linkText("View Assignments")).click();
+        List<WebElement> links = driver.findElements(By.xpath("//a[contains(@id, 'viewAssignments-')]"));
+        for (WebElement link : links) {
+            System.out.println("Found assignment link: " + link.getAttribute("id"));
+        }
+        links.get(0).click();
         Thread.sleep(SLEEP_DURATION);
 
         driver.findElement(By.xpath("//button[contains(text(),'Add Assignment')]")).click();
         Thread.sleep(SLEEP_DURATION);
 
-        driver.findElement(By.id("atitle")).sendKeys("Selenium Test Assignment");
-        driver.findElement(By.id("adueDate")).sendKeys("2025-05-15");
+        driver.findElement(By.id("atitle")).sendKeys("Selenium TestAddAssignment");
+        driver.findElement(By.id("adueDate")).sendKeys("05-15-2025");
 
-        driver.findElement(By.xpath("//button[contains(text(),'Save')]")).click();
+        driver.findElement(By.id("saveAssignment")).click();
         Thread.sleep(SLEEP_DURATION);
 
         // check the new assignment appears in the list
-        WebElement row = driver.findElement(By.xpath("//tr[td[contains(text(),'Selenium Test Assignment')]]"));
+        WebElement row = driver.findElement(By.xpath("//tr[td[contains(text(),'Selenium TestAddAssignment')]]"));
         assertNotNull(row, "Assignment not found after adding.");
 
         // delete the test assignment
-        WebElement deleteButton = row.findElement(By.xpath(".//button[@title='Delete']"));
+        WebElement deleteButton = row.findElement(By.xpath(".//button[contains(@id, 'delete-assignment-')]"));
         deleteButton.click();
         Thread.sleep(SLEEP_DURATION);
 
@@ -69,7 +75,7 @@ public class AssignmentControllerSystemTest {
 
         // confirm assignment no longer exists
         assertThrows(NoSuchElementException.class, () ->
-                driver.findElement(By.xpath("//tr[td[contains(text(),'Selenium Test Assignment')]]")),
+                driver.findElement(By.xpath("//tr[td[contains(text(),'Selenium TestAddAssignment')]]")),
                 "Assignment was not deleted properly.");
     }
 
@@ -78,16 +84,18 @@ public class AssignmentControllerSystemTest {
         driver.findElement(By.linkText("View Sections")).click();
         Thread.sleep(SLEEP_DURATION);
 
-        driver.findElement(By.linkText("View Assignments")).click();
+        List<WebElement> links = driver.findElements(By.xpath("//a[contains(@id, 'viewAssignments-')]"));
+        assertFalse(links.isEmpty(), "No assignment links found.");
+        links.get(0).click();
         Thread.sleep(SLEEP_DURATION);
 
-        WebElement gradeIcon = driver.findElement(By.xpath("//button[@title='Grade']"));
-        gradeIcon.click();
+        WebElement gradeButton = driver.findElement(By.id("grade-assignment-2"));
+        gradeButton.click();
         Thread.sleep(SLEEP_DURATION);
 
         WebElement scoreInput = driver.findElement(By.name("score"));
         scoreInput.clear();
-        scoreInput.sendKeys("95");
+        scoreInput.sendKeys("100");
 
         driver.findElement(By.xpath("//button[contains(text(),'Save Grades')]")).click();
         Thread.sleep(SLEEP_DURATION);
@@ -95,8 +103,19 @@ public class AssignmentControllerSystemTest {
         driver.navigate().refresh();
         Thread.sleep(SLEEP_DURATION);
 
+        driver.findElement(By.linkText("View Sections")).click();
+        Thread.sleep(SLEEP_DURATION);
+
+        links = driver.findElements(By.xpath("//a[contains(@id, 'viewAssignments-')]"));
+        links.get(0).click();
+        Thread.sleep(SLEEP_DURATION);
+
+        gradeButton = driver.findElement(By.id("grade-assignment-2"));
+        gradeButton.click();
+        Thread.sleep(SLEEP_DURATION);
+
         // check that the new score was saved correctly
-        WebElement updatedInput = driver.findElement(By.xpath("//input[@name='score']"));
-        assertEquals("95", updatedInput.getAttribute("value"), "Grade was not updated correctly.");
+        WebElement updatedInput = driver.findElement(By.name("score"));
+        assertEquals("100", updatedInput.getAttribute("value"), "Grade was not updated correctly.");
     }
 }
