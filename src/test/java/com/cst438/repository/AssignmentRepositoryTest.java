@@ -1,13 +1,8 @@
 package com.cst438.repository;
 
-import com.cst438.domain.Assignment;
-import com.cst438.domain.AssignmentRepository;
-import com.cst438.domain.Enrollment;
-import com.cst438.domain.EnrollmentRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 

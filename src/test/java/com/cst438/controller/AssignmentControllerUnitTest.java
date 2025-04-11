@@ -1,9 +1,5 @@
 package com.cst438.controller;
 
-import com.cst438.domain.Assignment;
-import com.cst438.domain.AssignmentRepository;
-import com.cst438.domain.Course;
-import com.cst438.domain.Section;
 import com.cst438.domain.SectionRepository;
 import com.cst438.dto.AssignmentDTO;
 import com.fasterxml.jackson.databind.ObjectMapper;
