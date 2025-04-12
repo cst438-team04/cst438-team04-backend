@@ -7,6 +7,7 @@ import com.cst438.domain.EnrollmentRepository;
 import com.cst438.domain.SectionRepository;
 import com.cst438.domain.UserRepository;
 import com.cst438.dto.EnrollmentDTO;
+import com.cst438.service.GradebookServiceProxy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -33,6 +34,8 @@ public class StudentScheduleController {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    GradebookServiceProxy gradebookService;
     /**
      * Students list their transcript containing all enrollments.
      * Returns a list of enrollments in chronological order.
@@ -129,7 +132,7 @@ public class StudentScheduleController {
                     savedEnrollment.getSection().getTerm().getYear(),
                     savedEnrollment.getSection().getTerm().getSemester()
             );
-
+            gradebookService.enrollInCourse(enrollmentDTO);
             return ResponseEntity.ok(enrollmentDTO);
         } catch (NumberFormatException e) {
             return ResponseEntity.badRequest().body("Invalid studentId: " + studentId);
@@ -151,6 +154,7 @@ public class StudentScheduleController {
                     .orElseThrow(() -> new RuntimeException("Enrollment not found"));
 
             enrollmentRepository.delete(enrollment);
+            gradebookService.dropCourse(enrollment.getEnrollmentId());
 
             return ResponseEntity.ok().build();
         } catch (NumberFormatException e) {
