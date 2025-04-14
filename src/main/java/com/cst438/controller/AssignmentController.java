@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
+import com.cst438.dto.SectionDTO;
+
 
 
 import java.util.ArrayList;
@@ -26,6 +28,15 @@ public class AssignmentController {
 
     @Autowired	
     private SectionRepository sectionRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private GradeRepository gradeRepository;
+
+    @Autowired
+    private EnrollmentRepository enrollmentRepository;
 		
     /**
      instructor lists assignments for a section.
@@ -130,5 +141,77 @@ public class AssignmentController {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Assignment not found.");
         }
         assignmentRepository.deleteById(assignmentId);
+    }
+
+    @GetMapping("/sections")
+    public List<SectionDTO> getSectionsForInstructor(
+            @RequestParam("email") String instructorEmail,
+            @RequestParam("year") int year ,
+            @RequestParam("semester") String semester )  {
+
+
+        List<Section> sections = sectionRepository.findByInstructorEmailAndYearAndSemester(instructorEmail, year, semester);
+
+        List<SectionDTO> dto_list = new ArrayList<>();
+        for (Section s : sections) {
+            User instructor = null;
+            if (s.getInstructorEmail()!=null) {
+                instructor = userRepository.findByEmail(s.getInstructorEmail());
+            }
+            dto_list.add(new SectionDTO(
+                    s.getSectionNo(),
+                    s.getTerm().getYear(),
+                    s.getTerm().getSemester(),
+                    s.getCourse().getCourseId(),
+                    s.getCourse().getTitle(),
+                    s.getSecId(),
+                    s.getBuilding(),
+                    s.getRoom(),
+                    s.getTimes(),
+                    (instructor!=null) ? instructor.getName() : "",
+                    (instructor!=null) ? instructor.getEmail() : ""
+            ));
+        }
+        return dto_list;
+    }
+
+    @GetMapping("/assignments")
+    public List<AssignmentStudentDTO> getStudentAssignments(
+            @RequestParam("studentId") int studentId,
+            @RequestParam("year") int year,
+            @RequestParam("semester") String semester) {
+
+        // TODO remove the following line when done
+
+        // return a list of assignments and (if they exist) the assignment grade
+        //  for all sections that the student is enrolled for the given year and semester
+        //  hint: use the assignment repository method findByStudentIdAndYearAndSemesterOrderByDueDate
+        List<Assignment> assignments = assignmentRepository.findByStudentIdAndYearAndSemesterOrderByDueDate(studentId, year, semester);
+
+        List<AssignmentStudentDTO> assignmentStudentDTOs = new ArrayList<>();
+        for (Assignment assignment : assignments) {
+            Integer score = null;
+
+            Enrollment studentEnrollment = enrollmentRepository.findEnrollmentBySectionNoAndStudentId(assignment.getSection().getSectionNo(), studentId);
+
+            if (studentEnrollment != null) {
+                Grade grade = gradeRepository.findByEnrollmentIdAndAssignmentId(studentEnrollment.getEnrollmentId(), assignment.getAssignmentId());
+                if (grade != null) {
+                    score = grade.getScore();
+                }
+            }
+
+            AssignmentStudentDTO dto = new AssignmentStudentDTO(
+                    assignment.getAssignmentId(),
+                    assignment.getTitle(),
+                    assignment.getDueDate(),
+                    assignment.getSection().getCourse().getCourseId(),
+                    assignment.getSection().getSectionNo(),
+                    score
+            );
+            assignmentStudentDTOs.add(dto);
+        }
+
+        return assignmentStudentDTOs;
     }
 }

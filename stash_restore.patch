@@ -1,0 +1,333 @@
+diff --git a/pom.xml b/pom.xml
+index 3c2e084..982bd87 100644
+--- a/pom.xml
++++ b/pom.xml
+@@ -58,6 +58,17 @@
+ 			<scope>test</scope>
+ 		</dependency>
+ 		<!-- end selenium -->
++		<!-- for rabbitmq -->
++		<dependency>
++			<groupId>org.springframework.boot</groupId>
++			<artifactId>spring-boot-starter-amqp</artifactId>
++		</dependency>
++		<dependency>
++			<groupId>org.springframework.amqp</groupId>
++			<artifactId>spring-rabbit-test</artifactId>
++			<scope>runtime</scope>
++		</dependency>
++		<!-- end rabbitmq -->
+ 	</dependencies>
+ 
+ 	<build>
+@@ -85,6 +96,11 @@
+ 				<enabled>false</enabled>
+ 			</releases>
+ 		</repository>
++		<repository>
++			<id>central</id>
++			<name>Maven Central</name>
++			<url>https://repo.maven.apache.org/maven2</url>
++		</repository>
+ 	</repositories>
+ 	<pluginRepositories>
+ 		<pluginRepository>
+diff --git a/src/main/java/com/cst438/controller/AssignmentController.java b/src/main/java/com/cst438/controller/AssignmentController.java
+index 4bd1ef1..71ac2ad 100644
+--- a/src/main/java/com/cst438/controller/AssignmentController.java
++++ b/src/main/java/com/cst438/controller/AssignmentController.java
+@@ -4,6 +4,7 @@ import com.cst438.domain.*;
+ import com.cst438.dto.AssignmentDTO;
+ import com.cst438.dto.AssignmentStudentDTO;
+ import com.cst438.dto.GradeDTO;
++import com.cst438.dto.SectionDTO;
+ import org.springframework.http.HttpStatus;
+ import org.springframework.web.bind.annotation.*;
+ import org.springframework.beans.factory.annotation.Autowired;
+@@ -12,6 +13,14 @@ import org.springframework.web.bind.annotation.PostMapping;
+ import org.springframework.web.bind.annotation.RequestBody;
+ import org.springframework.web.bind.annotation.RestController;
+ import org.springframework.web.server.ResponseStatusException;
++import com.cst438.domain.User;
++import com.cst438.domain.UserRepository;
++import com.cst438.domain.Section;
++import com.cst438.domain.SectionRepository;
++import com.cst438.domain.Grade;
++import com.cst438.domain.GradeRepository;
++import com.cst438.domain.Enrollment;
++import com.cst438.domain.EnrollmentRepository;
+ 
+ 
+ import java.util.ArrayList;
+@@ -26,6 +35,15 @@ public class AssignmentController {
+ 
+     @Autowired	
+     private SectionRepository sectionRepository;
++
++    @Autowired
++    private UserRepository userRepository;
++
++    @Autowired
++    private GradeRepository gradeRepository;
++
++    @Autowired
++    private EnrollmentRepository enrollmentRepository;
+ 		
+     /**
+      instructor lists assignments for a section.
+@@ -131,4 +149,76 @@ public class AssignmentController {
+         }
+         assignmentRepository.deleteById(assignmentId);
+     }
++
++    // get Sections for an instructor
++    // example URL  /sections?instructorEmail=dwisneski@csumb.edu&year=2024&semester=Spring
++    @GetMapping("/sections")
++    public List<SectionDTO> getSectionsForInstructor(
++            @RequestParam("email") String instructorEmail,
++            @RequestParam("year") int year ,
++            @RequestParam("semester") String semester )  {
++
++
++        List<Section> sections = sectionRepository.findByInstructorEmailAndYearAndSemester(instructorEmail, year, semester);
++
++        List<SectionDTO> dto_list = new ArrayList<>();
++        for (Section s : sections) {
++            User instructor = null;
++            if (s.getInstructorEmail()!=null) {
++                instructor = userRepository.findByEmail(s.getInstructorEmail());
++            }
++            dto_list.add(new SectionDTO(
++                    s.getSectionNo(),
++                    s.getTerm().getYear(),
++                    s.getTerm().getSemester(),
++                    s.getCourse().getCourseId(),
++                    s.getCourse().getTitle(),
++                    s.getSecId(),
++                    s.getBuilding(),
++                    s.getRoom(),
++                    s.getTimes(),
++                    (instructor!=null) ? instructor.getName() : "",
++                    (instructor!=null) ? instructor.getEmail() : ""
++            ));
++        }
++        return dto_list;
++    }
++
++    @GetMapping("/assignments")
++    public List<AssignmentStudentDTO> getStudentAssignments(
++            @RequestParam("studentId") int studentId,
++            @RequestParam("year") int year,
++            @RequestParam("semester") String semester) {
++
++        // return a list of assignments and (if they exist) the assignment grade
++        //  for all sections that the student is enrolled for the given year and semester
++        //  hint: use the assignment repository method findByStudentIdAndYearAndSemesterOrderByDueDate
++        List<Assignment> assignments = assignmentRepository.findByStudentIdAndYearAndSemesterOrderByDueDate(studentId, year, semester);
++
++        List<AssignmentStudentDTO> assignmentStudentDTOs = new ArrayList<>();
++        for (Assignment assignment : assignments) {
++            Integer score = null;
++
++            Enrollment studentEnrollment = enrollmentRepository.findEnrollmentBySectionNoAndStudentId(assignment.getSection().getSectionNo(), studentId);
++
++            if (studentEnrollment != null) {
++                Grade grade = gradeRepository.findByEnrollmentIdAndAssignmentId(studentEnrollment.getEnrollmentId(), assignment.getAssignmentId());
++                if (grade != null) {
++                    score = grade.getScore();
++                }
++            }
++
++            AssignmentStudentDTO dto = new AssignmentStudentDTO(
++                    assignment.getAssignmentId(),
++                    assignment.getTitle(),
++                    assignment.getDueDate(),
++                    assignment.getSection().getCourse().getCourseId(),
++                    assignment.getSection().getSectionNo(),
++                    score
++            );
++            assignmentStudentDTOs.add(dto);
++        }
++
++        return assignmentStudentDTOs;
++    }
+ }
+diff --git a/src/main/java/com/cst438/controller/EnrollmentController.java b/src/main/java/com/cst438/controller/EnrollmentController.java
+index ce3c5eb..3b8415a 100644
+--- a/src/main/java/com/cst438/controller/EnrollmentController.java
++++ b/src/main/java/com/cst438/controller/EnrollmentController.java
+@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Autowired;
+ import org.springframework.http.HttpStatus;
+ import org.springframework.web.bind.annotation.*;
+ import org.springframework.web.server.ResponseStatusException;
++import com.cst438.service.RegistrarServiceProxy;
++
+ 
+ import java.util.ArrayList;
+ import java.util.List;
+@@ -17,6 +19,9 @@ import java.util.List;
+ @CrossOrigin(origins = "http://localhost:3000")
+ public class EnrollmentController {
+ 
++    @Autowired
++    RegistrarServiceProxy registrarServiceProxy;
++
+     @Autowired
+     private EnrollmentRepository enrollmentRepository;
+ 
+@@ -77,8 +82,6 @@ public class EnrollmentController {
+     @PutMapping("/enrollments")
+     public void updateEnrollmentGrade(@RequestBody List<EnrollmentDTO> dlist) {
+ 
+-        // TODO
+-
+         // For each EnrollmentDTO in the list
+         //  find the Enrollment entity using enrollmentId
+         //  update the grade and save back to database
+@@ -93,6 +96,8 @@ public class EnrollmentController {
+             enrollment.setGrade(enrollmentDTO.grade());
+ 
+             enrollmentRepository.save(enrollment);
++
++            registrarServiceProxy.sendFinalGradeUpdate(enrollment);
+         }
+ 
+     }
+diff --git a/src/main/java/com/cst438/service/RegistrarServiceProxy.java b/src/main/java/com/cst438/service/RegistrarServiceProxy.java
+index bf2b9f8..422e1c2 100644
+--- a/src/main/java/com/cst438/service/RegistrarServiceProxy.java
++++ b/src/main/java/com/cst438/service/RegistrarServiceProxy.java
+@@ -1,4 +1,121 @@
+ package com.cst438.service;
+ 
++import com.cst438.domain.*;
++import com.fasterxml.jackson.databind.ObjectMapper;
++import org.springframework.amqp.core.Queue;
++import org.springframework.amqp.rabbit.annotation.RabbitListener;
++import org.springframework.amqp.rabbit.core.RabbitTemplate;
++import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.context.annotation.Bean;
++import org.springframework.stereotype.Service;
++
++@Service
+ public class RegistrarServiceProxy {
++
++    Queue registrarServiceQueue = new Queue("registrar_service", true);
++
++    @Bean
++    public Queue createQueue() {
++        return new Queue("gradebook_service", true);
++    }
++
++    @Autowired
++    RabbitTemplate rabbitTemplate;
++
++    @Autowired
++    CourseRepository courseRepository;
++
++    @Autowired
++    UserRepository userRepository;
++
++    @Autowired
++    SectionRepository sectionRepository;
++
++    @Autowired
++    EnrollmentRepository enrollmentRepository;
++
++    private final ObjectMapper objectMapper = new ObjectMapper();
++
++    @RabbitListener(queues = "gradebook_service")
++    public void receiveFromRegistrar(String message)  {
++        //TODO implement this message
++        try {
++            String[] parts = message.split(" ", 2);
++            String action = parts[0];
++            String data = parts.length > 1 ? parts[1] : null;
++
++            switch (action) {
++                case "addCourse":
++                case "updateCourse":
++                    Course course = fromJsonString(data, Course.class);
++                    courseRepository.save(course);
++                    break;
++                case "deleteCourse":
++                    courseRepository.deleteById(data);
++                    break;
++
++                case "addUser":
++                case "updateUser":
++                            User user = fromJsonString(data, User.class);
++                            userRepository.save(user);
++                            break;
++                case "deleteUser":
++                    userRepository.deleteById(Integer.parseInt(data));
++                    break;
++
++                case "addSection":
++                case "updateSection":
++                    Section section = fromJsonString(data, Section.class);
++                    sectionRepository.save(section);
++                    break;
++                case "deleteSection":
++                    sectionRepository.deleteById(Integer.parseInt(data));
++                    break;
++
++                case "addEnrollment":
++                case "updateEnrollment":
++                    Enrollment enrollment = fromJsonString(data, Enrollment.class);
++                    enrollmentRepository.save(enrollment);
++                    break;
++                case "deleteEnrollment":
++                    enrollmentRepository.deleteById((int) Long.parseLong(data));
++                    break;
++
++                default:
++                    System.out.println("Unknown action: " + action);
++            }
++        } catch (Exception e){
++            System.err.println("Error processing message: " + message);
++            e.printStackTrace();
++        }
++    }
++
++    public void sendFinalGradeUpdate(Enrollment enrollment) {
++        try{
++            String msg = "updateFinalGrade" + asJsonString(enrollment);
++            sendMessage(msg);
++        } catch (Exception e) {
++            System.err.println("Error processing message: " + e.getMessage());
++            e.printStackTrace();
++        }
++    }
++
++
++    private void sendMessage(String s) {
++        rabbitTemplate.convertAndSend(registrarServiceQueue.getName(), s);
++    }
++    private static String asJsonString(final Object obj) {
++        try {
++            return new ObjectMapper().writeValueAsString(obj);
++        } catch (Exception e) {
++            throw new RuntimeException(e);
++        }
++    }
++    private static <T> T  fromJsonString(String str, Class<T> valueType ) {
++        try {
++            return new ObjectMapper().readValue(str, valueType);
++        } catch (Exception e) {
++            throw new RuntimeException(e);
++        }
++    }
+ }
+diff --git a/src/main/resources/application.properties b/src/main/resources/application.properties
+index 0078bf4..d3a843c 100644
+--- a/src/main/resources/application.properties
++++ b/src/main/resources/application.properties
+@@ -1,3 +1,4 @@
+ spring.datasource.url=jdbc:h2:mem:testdb
+ spring.jpa.hibernate.ddl-auto=none
+-# spring.jpa.show-sql=true
+\ No newline at end of file
++# spring.jpa.show-sql=true
++server.port=8081
+\ No newline at end of file
