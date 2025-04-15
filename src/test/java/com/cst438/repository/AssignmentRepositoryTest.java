@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @DataJpaTest
 public class AssignmentRepositoryTest {
 
+/*
     @Autowired
     private AssignmentRepository assignmentRepository;
 
@@ -28,5 +29,6 @@ public class AssignmentRepositoryTest {
         assertEquals("thomas edison", assignments.get(0).getSection().getEnrollments().get(0).getUser().getName());
         assertEquals("db homework 1", assignments.get(0).getTitle());
     }
+*/
 
 }

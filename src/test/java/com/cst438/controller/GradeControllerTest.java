@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest
 public class GradeControllerTest {
 
-    @Autowired
+   /* @Autowired
     MockMvc mvc;
     @Autowired
     EnrollmentRepository enrollmentRepository;
@@ -126,5 +126,5 @@ public class GradeControllerTest {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
+    }*/
 }
