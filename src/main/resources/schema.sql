@@ -73,6 +73,6 @@ create table grade (
     enrollment_id int not null,
     assignment_id int not null,
     score int check (score between 0 and 100),
-    foreign key(enrollment_id) references enrollment(enrollment_id),
+    foreign key(enrollment_id) references enrollment(enrollment_id) ON DELETE CASCADE,
     foreign key(assignment_id) references assignment(assignment_id)
 );

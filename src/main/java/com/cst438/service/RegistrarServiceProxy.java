@@ -108,6 +108,9 @@ public class RegistrarServiceProxy {
                 case "deleteEnrollment":
                     enrollmentRepository.deleteById((int) Long.parseLong(data));
                     break;
+                case "dropCourse":
+                    enrollmentRepository.deleteById((int) Long.parseLong(data));
+                    break;
 
                 default:
                     System.out.println("Unknown action: " + action);
