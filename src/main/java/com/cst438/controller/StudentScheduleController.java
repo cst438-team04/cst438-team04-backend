@@ -10,6 +10,7 @@ import com.cst438.dto.EnrollmentDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -40,6 +41,7 @@ public class StudentScheduleController {
      * Example URL: /transcripts?studentId=19803
      */
     @GetMapping("/transcripts")
+    @PreAuthorize("hasAuthority('SCOPE_ROLE_STUDENT')")
     public ResponseEntity<?> getTranscript(@RequestParam("studentId") String studentId) {
         try {
             int id = Integer.parseInt(studentId);
@@ -77,6 +79,7 @@ public class StudentScheduleController {
      * Logged-in user must be the student.
      */
     @PostMapping("/enrollments/sections/{sectionNo}")
+    @PreAuthorize("hasAuthority('SCOPE_ROLE_STUDENT')")
     public ResponseEntity<?> addCourse(
             @PathVariable int sectionNo,
             @RequestParam("studentId") String studentId,
@@ -143,6 +146,7 @@ public class StudentScheduleController {
      * Logged-in user must be the student.
      */
     @DeleteMapping("/enrollments/{enrollmentId}")
+    @PreAuthorize("hasAuthority('SCOPE_ROLE_STUDENT')")
     public ResponseEntity<?> dropCourse(@PathVariable("enrollmentId") String enrollmentId) {
         try {
             int id = Integer.parseInt(enrollmentId);

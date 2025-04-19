@@ -5,6 +5,7 @@ import com.cst438.domain.UserRepository;
 import com.cst438.dto.UserDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -26,6 +27,7 @@ public class UserController {
      list all users
      */
     @GetMapping("/users")
+    @PreAuthorize("hasAuthority('SCOPE_ROLE_ADMIN')")
     public List<UserDTO> findAllUsers() {
 
         List<User> users = userRepository.findAllByOrderByIdAsc();
@@ -40,6 +42,7 @@ public class UserController {
      Admin creates a user
      */
     @PostMapping("/users")
+    @PreAuthorize("hasAuthority('SCOPE_ROLE_ADMIN')")
     public UserDTO createUser(@RequestBody UserDTO userDTO) {
         User user = new User();
         user.setName(userDTO.name());
@@ -65,6 +68,7 @@ public class UserController {
      Admin update a user's name, email or type
      */
     @PutMapping("/users")
+    @PreAuthorize("hasAuthority('SCOPE_ROLE_ADMIN')")
     public UserDTO updateUser(@RequestBody UserDTO userDTO) {
         User user = userRepository.findById(userDTO.id()).orElse(null);
         if (user==null) {
@@ -87,6 +91,7 @@ public class UserController {
      Admin delete a user
      */
     @DeleteMapping("/users/{id}")
+    @PreAuthorize("hasAuthority('SCOPE_ROLE_ADMIN')")
     public void  updateUser(@PathVariable("id") int id) {
         User user = userRepository.findById(id).orElse(null);
         if (user!=null) {

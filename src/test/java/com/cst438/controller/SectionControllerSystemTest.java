@@ -17,8 +17,7 @@ public class SectionControllerSystemTest {
     // of the Chrome driver.
     //  for WinOS the file name will be chromedriver.exe
     //  for MacOS the file name will be chromedriver
-    public static final String CHROME_DRIVER_FILE_LOCATION =
-            "C:/chromedriver/chromedriver.exe";
+    public static final String CHROME_DRIVER_FILE_LOCATION = "C:\\chromedriver-win64\\chromedriver.exe";
 
     //public static final String CHROME_DRIVER_FILE_LOCATION =
     //        "~/chromedriver_macOS/chromedriver";

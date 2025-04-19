@@ -5,6 +5,7 @@ import com.cst438.dto.AssignmentDTO;
 import com.cst438.dto.AssignmentStudentDTO;
 import com.cst438.dto.GradeDTO;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -63,6 +64,7 @@ public class AssignmentController {
      logged in user must be the instructor for the section (assignment 7)
      */
     @PostMapping("/assignments")
+    @PreAuthorize("hasAuthority('SCOPE_ROLE_INSTRUCTOR')")
     public AssignmentDTO createAssignment(@RequestBody AssignmentDTO dto) {
         Section section = sectionRepository.findById(dto.secNo())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Section not found."));
@@ -96,6 +98,7 @@ public class AssignmentController {
      logged in user must be the instructor for the section (assignment 7)
      */
     @PutMapping("/assignments")
+    @PreAuthorize("hasAuthority('SCOPE_ROLE_INSTRUCTOR')")
     public AssignmentDTO updateAssignment(@RequestBody AssignmentDTO dto) {
 	Assignment assignment = assignmentRepository.findById(dto.id())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Assignment not found."));
@@ -125,6 +128,7 @@ public class AssignmentController {
      logged in user must be the instructor for the section (assignment 7)
      */
     @DeleteMapping("/assignments/{assignmentId}")
+    @PreAuthorize("hasAuthority('SCOPE_ROLE_INSTRUCTOR')")
     public void deleteAssignment(@PathVariable("assignmentId") int assignmentId) {
 	if (!assignmentRepository.existsById(assignmentId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Assignment not found.");
