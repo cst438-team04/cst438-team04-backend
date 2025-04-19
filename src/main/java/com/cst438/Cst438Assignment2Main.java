@@ -1,4 +1,4 @@
-package com.cst438;
+package com.cst438.service;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
