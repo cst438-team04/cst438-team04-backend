@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 
+import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -65,10 +66,12 @@ public class AssignmentController {
      */
     @PostMapping("/assignments")
     @PreAuthorize("hasAuthority('SCOPE_ROLE_INSTRUCTOR')")
-    public AssignmentDTO createAssignment(@RequestBody AssignmentDTO dto) {
+    public AssignmentDTO createAssignment(@RequestBody AssignmentDTO dto, Principal principal) {
         Section section = sectionRepository.findById(dto.secNo())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Section not found."));
-
+        if(!section.getInstructorEmail().equals(principal.getName())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not authorized to create assignments for this section.");
+        }
 	Assignment assignment = new Assignment();
         assignment.setTitle(dto.title());    
 
@@ -99,10 +102,13 @@ public class AssignmentController {
      */
     @PutMapping("/assignments")
     @PreAuthorize("hasAuthority('SCOPE_ROLE_INSTRUCTOR')")
-    public AssignmentDTO updateAssignment(@RequestBody AssignmentDTO dto) {
+    public AssignmentDTO updateAssignment(@RequestBody AssignmentDTO dto,Principal principal) {
+
 	Assignment assignment = assignmentRepository.findById(dto.id())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Assignment not found."));
-
+        if(!assignment.getSection().getInstructorEmail().equals(principal.getName())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not authorized to update assignments for this section.");
+        }
 	assignment.setTitle(dto.title());
 
         try {
@@ -129,10 +135,17 @@ public class AssignmentController {
      */
     @DeleteMapping("/assignments/{assignmentId}")
     @PreAuthorize("hasAuthority('SCOPE_ROLE_INSTRUCTOR')")
-    public void deleteAssignment(@PathVariable("assignmentId") int assignmentId) {
+    public void deleteAssignment(@PathVariable("assignmentId") int assignmentId,Principal principal) {
 	if (!assignmentRepository.existsById(assignmentId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Assignment not found.");
         }
+        Assignment assignment = assignmentRepository.findById(assignmentId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Assignment not found."));
+
+        if(!assignment.getSection().getInstructorEmail().equals(principal.getName())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not authorized to delete assignments for this section.");
+        }
+
         assignmentRepository.deleteById(assignmentId);
     }
 }

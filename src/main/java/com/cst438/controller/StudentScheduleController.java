@@ -14,6 +14,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.security.Principal;
 import java.sql.Date;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -42,9 +43,11 @@ public class StudentScheduleController {
      */
     @GetMapping("/transcripts")
     @PreAuthorize("hasAuthority('SCOPE_ROLE_STUDENT')")
-    public ResponseEntity<?> getTranscript(@RequestParam("studentId") String studentId) {
+    public ResponseEntity<?> getTranscript(Principal principal) {
         try {
-            int id = Integer.parseInt(studentId);
+            //int id = Integer.parseInt(studentId);
+            User student = userRepository.findByEmail(principal.getName());
+            int id = student.getId();
             List<Enrollment> enrollments = enrollmentRepository.findEnrollmentsByStudentIdOrderByTermId(id);
 
             List<EnrollmentDTO> enrollmentDTOs = enrollments.stream()
@@ -69,7 +72,7 @@ public class StudentScheduleController {
 
             return ResponseEntity.ok(enrollmentDTOs);
         } catch (NumberFormatException e) {
-            return ResponseEntity.badRequest().body("Invalid studentId: " + studentId);
+            return ResponseEntity.badRequest().body("Invalid studentId: " + userRepository.findByEmail(principal.getName()).getId());
         }
     }
 
@@ -82,11 +85,12 @@ public class StudentScheduleController {
     @PreAuthorize("hasAuthority('SCOPE_ROLE_STUDENT')")
     public ResponseEntity<?> addCourse(
             @PathVariable int sectionNo,
-            @RequestParam("studentId") String studentId,
-            @RequestParam(value = "date", required = false) String date) {
+            @RequestParam(value = "date", required = false) String date, Principal principal) {
 
         try {
-            int id = Integer.parseInt(studentId);
+            //int id = Integer.parseInt();
+            User student2 = userRepository.findByEmail(principal.getName());
+            int id = student2.getId();
 
             Section section = sectionRepository.findById(sectionNo)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Section Not Found"));
@@ -135,7 +139,7 @@ public class StudentScheduleController {
 
             return ResponseEntity.ok(enrollmentDTO);
         } catch (NumberFormatException e) {
-            return ResponseEntity.badRequest().body("Invalid studentId: " + studentId);
+            return ResponseEntity.badRequest().body("Invalid studentId: " + userRepository.findByEmail(principal.getName()).getId());
         } catch (ResponseStatusException ex) {
             return new ResponseEntity<>(ex.getReason(),ex.getStatusCode());
         }
@@ -147,13 +151,18 @@ public class StudentScheduleController {
      */
     @DeleteMapping("/enrollments/{enrollmentId}")
     @PreAuthorize("hasAuthority('SCOPE_ROLE_STUDENT')")
-    public ResponseEntity<?> dropCourse(@PathVariable("enrollmentId") String enrollmentId) {
+    public ResponseEntity<?> dropCourse(@PathVariable("enrollmentId") String enrollmentId,Principal principal) {
         try {
+            User student = userRepository.findByEmail(principal.getName());
             int id = Integer.parseInt(enrollmentId);
 
             Enrollment enrollment = enrollmentRepository.findById(id)
                     .orElseThrow(() -> new RuntimeException("Enrollment not found"));
 
+            if(enrollment.getUser().getId()!=student.getId())
+            {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("You are not authorized to drop this enrollment.");
+            }
             enrollmentRepository.delete(enrollment);
 
             return ResponseEntity.ok().build();

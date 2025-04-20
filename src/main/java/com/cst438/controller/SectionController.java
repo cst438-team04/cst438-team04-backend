@@ -8,6 +8,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -160,12 +161,12 @@ public class SectionController {
     @GetMapping("/sections")
     @PreAuthorize("hasAuthority('SCOPE_ROLE_INSTRUCTOR')")
     public List<SectionDTO> getSectionsForInstructor(
-            @RequestParam("email") String instructorEmail,
             @RequestParam("year") int year ,
-            @RequestParam("semester") String semester )  {
+            @RequestParam("semester") String semester,
+            Principal principal)  {
 
-
-        List<Section> sections = sectionRepository.findByInstructorEmailAndYearAndSemester(instructorEmail, year, semester);
+        User instructor2 = userRepository.findByEmail(principal.getName());
+        List<Section> sections = sectionRepository.findByInstructorEmailAndYearAndSemester(instructor2.getEmail(), year, semester);
 
         List<SectionDTO> dto_list = new ArrayList<>();
         for (Section s : sections) {
