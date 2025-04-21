@@ -5,6 +5,7 @@ import com.cst438.dto.AssignmentDTO;
 import com.cst438.dto.AssignmentStudentDTO;
 import com.cst438.dto.GradeDTO;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 
+import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -63,10 +65,13 @@ public class AssignmentController {
      logged in user must be the instructor for the section (assignment 7)
      */
     @PostMapping("/assignments")
-    public AssignmentDTO createAssignment(@RequestBody AssignmentDTO dto) {
+    @PreAuthorize("hasAuthority('SCOPE_ROLE_INSTRUCTOR')")
+    public AssignmentDTO createAssignment(@RequestBody AssignmentDTO dto, Principal principal) {
         Section section = sectionRepository.findById(dto.secNo())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Section not found."));
-
+        if(!section.getInstructorEmail().equals(principal.getName())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not authorized to create assignments for this section.");
+        }
 	Assignment assignment = new Assignment();
         assignment.setTitle(dto.title());    
 
@@ -96,10 +101,14 @@ public class AssignmentController {
      logged in user must be the instructor for the section (assignment 7)
      */
     @PutMapping("/assignments")
-    public AssignmentDTO updateAssignment(@RequestBody AssignmentDTO dto) {
+    @PreAuthorize("hasAuthority('SCOPE_ROLE_INSTRUCTOR')")
+    public AssignmentDTO updateAssignment(@RequestBody AssignmentDTO dto,Principal principal) {
+
 	Assignment assignment = assignmentRepository.findById(dto.id())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Assignment not found."));
-
+        if(!assignment.getSection().getInstructorEmail().equals(principal.getName())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not authorized to update assignments for this section.");
+        }
 	assignment.setTitle(dto.title());
 
         try {
@@ -125,10 +134,18 @@ public class AssignmentController {
      logged in user must be the instructor for the section (assignment 7)
      */
     @DeleteMapping("/assignments/{assignmentId}")
-    public void deleteAssignment(@PathVariable("assignmentId") int assignmentId) {
+    @PreAuthorize("hasAuthority('SCOPE_ROLE_INSTRUCTOR')")
+    public void deleteAssignment(@PathVariable("assignmentId") int assignmentId,Principal principal) {
 	if (!assignmentRepository.existsById(assignmentId)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Assignment not found.");
         }
+        Assignment assignment = assignmentRepository.findById(assignmentId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Assignment not found."));
+
+        if(!assignment.getSection().getInstructorEmail().equals(principal.getName())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not authorized to delete assignments for this section.");
+        }
+
         assignmentRepository.deleteById(assignmentId);
     }
 }

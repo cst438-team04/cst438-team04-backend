@@ -5,9 +5,11 @@ import com.cst438.dto.AssignmentStudentDTO;
 import com.cst438.dto.EnrollmentDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -25,6 +27,8 @@ public class StudentController {
 
     @Autowired
     private GradeRepository gradeRepository;
+    @Autowired
+    private UserRepository userRepository;
 
     /**
      students lists there enrollments given year and semester value
@@ -32,16 +36,18 @@ public class StudentController {
      logged in user must be the student (assignment 7)
      */
    @GetMapping("/enrollments")
+   @PreAuthorize("hasAuthority('SCOPE_ROLE_STUDENT')")
    public List<EnrollmentDTO> getSchedule(
            @RequestParam("year") int year,
            @RequestParam("semester") String semester,
-           @RequestParam("studentId") int studentId) {
+           Principal principal) {
 
 
      // TODO
 	 //  hint: use enrollment repository method findByYearAndSemesterOrderByCourseId
      //  remove the following line when done
-       List<Enrollment> enrollments = enrollmentRepository.findByYearAndSemesterOrderByCourseId(year, semester, studentId);
+       User student = userRepository.findByEmail(principal.getName());
+       List<Enrollment> enrollments = enrollmentRepository.findByYearAndSemesterOrderByCourseId(year, semester, student.getId());
 
        List<EnrollmentDTO> enrollmentDTOs = new ArrayList<>();
        for (Enrollment enrollment : enrollments) {
@@ -73,8 +79,9 @@ public class StudentController {
      logged in user must be the student (assignment 7)
      */
     @GetMapping("/assignments")
+    @PreAuthorize("hasAuthority('SCOPE_ROLE_STUDENT')")
     public List<AssignmentStudentDTO> getStudentAssignments(
-            @RequestParam("studentId") int studentId,
+            Principal principal,
             @RequestParam("year") int year,
             @RequestParam("semester") String semester) {
 
@@ -83,13 +90,14 @@ public class StudentController {
         // return a list of assignments and (if they exist) the assignment grade
         //  for all sections that the student is enrolled for the given year and semester
         //  hint: use the assignment repository method findByStudentIdAndYearAndSemesterOrderByDueDate
-        List<Assignment> assignments = assignmentRepository.findByStudentIdAndYearAndSemesterOrderByDueDate(studentId, year, semester);
+        User student =  userRepository.findByEmail(principal.getName());
+        List<Assignment> assignments = assignmentRepository.findByStudentIdAndYearAndSemesterOrderByDueDate(student.getId(), year, semester);
 
         List<AssignmentStudentDTO> assignmentStudentDTOs = new ArrayList<>();
         for (Assignment assignment : assignments) {
             Integer score = null;
 
-            Enrollment studentEnrollment = enrollmentRepository.findEnrollmentBySectionNoAndStudentId(assignment.getSection().getSectionNo(), studentId);
+            Enrollment studentEnrollment = enrollmentRepository.findEnrollmentBySectionNoAndStudentId(assignment.getSection().getSectionNo(), student.getId());
 
             if (studentEnrollment != null) {
                 Grade grade = gradeRepository.findByEnrollmentIdAndAssignmentId(studentEnrollment.getEnrollmentId(), assignment.getAssignmentId());

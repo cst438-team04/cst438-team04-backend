@@ -5,6 +5,7 @@ import com.cst438.dto.CourseDTO;
 import com.cst438.dto.SectionDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -36,6 +37,7 @@ public class CourseController {
 
 
     // ADMIN function to create a new course
+    @PreAuthorize("hasAuthority('SCOPE_ROLE_ADMIN')")
     @PostMapping("/courses")
     public CourseDTO addCourse(@RequestBody CourseDTO course) {
         Course c = new Course();
@@ -52,6 +54,7 @@ public class CourseController {
 
     // ADMIN function to update a course
     @PutMapping("/courses")
+    @PreAuthorize("hasAuthority('SCOPE_ROLE_ADMIN')")
     public CourseDTO updateCourse(@RequestBody CourseDTO course) {
         Course c = courseRepository.findById(course.courseId()).orElse(null);
         if (c==null) {
@@ -71,6 +74,7 @@ public class CourseController {
     // ADMIN function to delete a course
     // delete will fail if the course has sections
     @DeleteMapping("/courses/{courseid}")
+    @PreAuthorize("hasAuthority('SCOPE_ROLE_ADMIN')")
     public void deleteCourse(@PathVariable String courseid) {
         Course c = courseRepository.findById(courseid).orElse(null);
         // if course does not exist, do nothing.

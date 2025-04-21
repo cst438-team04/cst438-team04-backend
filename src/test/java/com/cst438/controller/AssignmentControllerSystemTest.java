@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class AssignmentControllerSystemTest {
 
-    public static final String CHROME_DRIVER_FILE_LOCATION = "C:/chromedriver/chromedriver.exe";
+    public static final String CHROME_DRIVER_FILE_LOCATION = "C:\\chromedriver-win64\\chromedriver.exe";
     public static final String URL = "http://localhost:3000";
     public static final int SLEEP_DURATION = 1000;
 
